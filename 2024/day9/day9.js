@@ -100,6 +100,7 @@ const part2 = () => {
     }
   }
 
+  console.log(input.join(' '))
   console.log(computeChecksum(input))
 }
 part2()
