@@ -31,21 +31,28 @@ async function process() {
     [1, 0],
   ]
 
-  const visited = {}
+  let visited = {}
 
   const validNextPartOfArea = (y,x,char) => {
     return !oob(y,x) && grid[y][x] == char && !visited[JSON.stringify([y,x])]
   }
+
+  const patches = []
 
   const search = (y,x,char) => {
     const stack = [[y,x]]
     let area = 0
     let perimiter = 0
 
+    const patch = {
+      char,
+      spaces: [],
+    }
     while (stack.length) {
       let p = 4
       const currentPosition = stack.pop()
       if ( visited[JSON.stringify(currentPosition)] ) continue
+      patch.spaces.push(currentPosition)
       area++
       visited[JSON.stringify(currentPosition)] = 1
 
@@ -58,7 +65,7 @@ async function process() {
       }
       perimiter += p
     }
-    console.log(char, area,perimiter)
+    patches.push(patch)
     return area*perimiter
   }
 
@@ -71,7 +78,117 @@ async function process() {
       totalCost += cost
     }
   }
-  console.log(totalCost)
+  console.log('cost part 1', totalCost)
+  visited = {}
+
+  const findAdjacentEdges = (edges, edge, orientation) => {
+    const side = []
+
+    if (orientation == 'h') {
+      let direction = 'right'
+
+      let nextEdge = {
+        side: edge.side,
+        pos: edge.pos,
+      }
+
+      while (true) {
+        if (direction == 'right') {
+          nextEdge = {
+            side: edge.side,
+            pos: [nextEdge.pos[0], nextEdge.pos[1] + 1],
+          }
+          const found = edges.find(e => e.side == nextEdge.side && e.pos[0] == nextEdge.pos[0] && e.pos[1] == nextEdge.pos[1])
+          if (found) {
+            side.push(found)
+          } else {
+            direction = 'left'
+            nextEdge = edge
+          }
+        } else {
+          nextEdge = {
+            side: edge.side,
+            pos: [nextEdge.pos[0], nextEdge.pos[1] - 1],
+          }
+          const found = edges.find(e => e.side == nextEdge.side && e.pos[0] == nextEdge.pos[0] && e.pos[1] == nextEdge.pos[1])
+          if (found) {
+            side.push(found)
+          } else {
+            break
+          }
+        }
+      }
+    } else if (orientation = 'v') {
+      let direction = 'down'
+
+      let nextEdge = {
+        side: edge.side,
+        pos: edge.pos,
+      }
+
+      while (true) {
+        if (direction == 'down') {
+          nextEdge = {
+            side: edge.side,
+            pos: [nextEdge.pos[0] + 1, nextEdge.pos[1]],
+          }
+          const found = edges.find(e => e.side == nextEdge.side && e.pos[0] == nextEdge.pos[0] && e.pos[1] == nextEdge.pos[1])
+          if (found) {
+            side.push(found)
+          } else {
+            direction = 'up'
+            nextEdge = edge
+          }
+        } else {
+          nextEdge = {
+            side: edge.side,
+            pos: [nextEdge.pos[0] - 1, nextEdge.pos[1]],
+          }
+          const found = edges.find(e => e.side == nextEdge.side && e.pos[0] == nextEdge.pos[0] && e.pos[1] == nextEdge.pos[1])
+          if (found) {
+            side.push(found)
+          } else {
+            break
+          }
+        }
+      }
+
+    }
+    return side
+  }
+
+
+  let totalPrice2 = 0
+
+  for (const patch of patches) {
+    let sideCount = 0
+    const edges = []
+
+    for (const space of patch.spaces) {
+      for (const dir of directions) {
+        if (!validNextPartOfArea(space[0] + dir[0], space[1] + dir[1], patch.char)) {
+          edges.push({
+            side: dir,
+            pos: [space[0] + dir[0], space[1] + dir[1]],
+          })
+        }
+      }
+    }
+
+    const usedEdges = {}
+
+    for (const edge of edges) {
+      if (usedEdges[JSON.stringify(edge)]) continue
+      const orientation = edge.side[0] != 0 ? 'h' : 'v'// if we look up from the center of a box, the edge we see is horizontal
+      const side = findAdjacentEdges(edges, edge, orientation)
+      for (const e of side) {
+        usedEdges[JSON.stringify(e)] = 1
+      }
+      sideCount++
+    }
+    totalPrice2 += sideCount * patch.spaces.length
+  }
+  console.log('part 2', totalPrice2)
 }
 
 process()
